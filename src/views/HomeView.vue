@@ -19,30 +19,32 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Monoton&display=swap" rel="stylesheet">
     <instructions-view v-if="state.instructionsOpen" id="instructions" @closeInstructions="closeInstructions"/>
-    <body @keyup.left="goLeft" :style="{ opacity: `${state.bodyOpacity}%` }">
+    <body :style="{ opacity: `${state.bodyOpacity}%` }">
+
+      <!-- BACKGROUND-->
+      <img 
+        src="../assets/space.png" 
+        id="background-image" 
+        :style="{ top: `${20 - xWing.y}vh`, left: `${xWing.x / 10 * -1}vw` }"
+      >
 
       <!-- TITLE SCREEN TEXT -->
-      <div class="title-screen-text" :style="{ opacity: `${state.titleTextOpacity}%` }">
-        <div v-if="!gameRunning">
-          <h1 
-            v-if="state.shipCount > 0" 
-            id="game-title" 
-            class="title-text"
-          >
-            STAR GAME 77
-          </h1>
-          <h1 
-            v-else
-            id="game-over" 
-            class="title-text"
-          >
-            GAME OVER
-          </h1>
-        </div>
-        <div 
-          id="startup-btns"
-          v-if="!gameRunning"
+      <div v-if="!gameRunning" class="title-screen-text" :style="{ opacity: `${state.titleTextOpacity}%` }">
+        <h1 
+          v-if="state.shipCount > 0" 
+          id="game-title" 
+          class="title-text"
         >
+          STAR GAME 77
+        </h1>
+        <h1 
+          v-else
+          id="game-over" 
+          class="title-text"
+        >
+          GAME OVER
+        </h1>
+        <div id="startup-btns">
           <h2 
             id="instructions-btn" 
             class="btn-border btn-hover" 
@@ -60,6 +62,7 @@
         </div>
       </div>
 
+      <!-- TOP OF SCREEN INFO -->
       <div v-if="gameRunning">
         <h2 id="ship-count" class="text">{{ state.shipCount }}</h2>
         <img id="ship-count-img" src="../assets/x-wing-200.png" />
@@ -72,16 +75,12 @@
           {{ state.pauseText }}
         </h2>
       </div>
-
-      
       <h2 v-if="!isMusicLoaded || !isBlastSoundLoaded" class="loading">Music and Sounds loading...</h2>
 
-      
-      <img 
-        src="../assets/space.png" 
-        id="background-image" 
-        :style="{ top: `${20 - xWing.y}vh`, left: `${xWing.x / 10 * -1}vw` }">
+
       <div id="btns" v-if="gameRunning">
+        
+        <!-- GAME CONTROLS -->
         <div id="up" class="btn">
           <img alt="up" src="../assets/up-arrow-btn.png" @mousedown="goUp" @touchstart="goUp" @touchend="mouseUp"/>
         </div>
@@ -97,49 +96,25 @@
         <div id="laser-btn2" class="btn">
           <img alt="laser" src="../assets/laser-ball-btn.png" @click="shoot" @touchstart="shoot"/>
         </div>
-      </div>
 
-      <div 
-        v-if="gameRunning"
-        id="ship" 
-        :style="{ 
-          top: `${xWing.y}vh`, 
-          transform: `rotate(${state.tilt}deg)`, 
-          opacity: `${state.shipOpacity}%`,
-          left: `${state.shipLeft}vw`
-        }">
-        <img v-if="!xWing.isHit" id="ship-img" :style="{width: `${state.shipWidth}vw` }" src="../assets/x-wing-200.png" />
-        <img v-else src="../assets/XwingExplosion-220.png" :style="{ width: `${state.explosionWidth}vw`}" />
-      </div>
+        <!-- X-WING --> 
+        <div
+          id="ship" 
+          :style="{ 
+            top: `${xWing.y}vh`, 
+            transform: `rotate(${state.tilt}deg)`, 
+            opacity: `${state.shipOpacity}%`,
+            left: `${state.shipLeft}vw`
+          }">
+          <img v-if="!xWing.isHit" id="ship-img" :style="{width: `${state.shipWidth}vw` }" src="../assets/x-wing-200.png" />
+          <img v-else src="../assets/XwingExplosion-220.png" :style="{ width: `${state.explosionWidth}vw`}" />
+        </div>
 
-      <div
-      v-if="state.lasers[0].isFired"
-        id="laser"
-        :style="{ top: `${state.lasers[0].y}vh`, left: `${state.lasers[0].x}vw`, width:`${state.lasers[0].width}vw` }"
-      >
-        <img
-          alt="laser"
-          :style="{ width:`${state.lasers[0].width}vw` }"
-          src="../assets/laser-ball.png"
-        />
-      </div>
-
-      <div
-      v-if="state.lasers[1].isFired"
-        id="laser2"
-        :style="{ top: `${state.lasers[1].y}vh`, left: `${state.lasers[1].x}vw`, width:`${state.lasers[1].width}vw` }"
-      >
-        <img
-          alt="laser"
-          :style="{ width:`${state.lasers[1].width}vw` }"
-          src="../assets/laser-ball.png"
-        />
-      </div>
-      <div v-if="gameRunning">
+        <!-- OTHER SHIPS -->
         <div v-for="(tie, key) in state.tieFighters" :key="key">
           <tie-fighter
             :xWing="xWing"
-            :lasers="state.lasers"
+            :lasers="lasers"
             :isPaused="state.isPaused"
             @blasted="gotOne"
             @collided="crashed" 
@@ -147,20 +122,18 @@
         </div>
         <chase-view   
           :xWing="xWing"
-          :lasers="state.lasers"
+          :lasers="lasers"
           :isPaused="state.isPaused"
           @blasted="gotOne"
         />
-
         <div v-for="index in friendCount" :key="index">
           <friend-view 
             :xWing="xWing"
-            :lasers="state.lasers"
+            :lasers="lasers"
             :isPaused="state.isPaused"
             :gameRunning="gameRunning"  
           />
         </div>
-
         <div id="death-star" :style="{ left: `${deathStarX}vw`, top: `${deathStarY}vw` }">
           <img id="death-star-img" :style="{ width: `${state.deathStarWidth}vw` }" src="../assets/death-star.png" />
         </div>      
@@ -169,13 +142,26 @@
         </div>       -->
       </div>
 
+      <!-- LASER -->
+      <div v-for="(laser, index) in lasers" :key="index">
+        <div
+          v-if="laser.isFired"
+          class="laser"
+          :style="{ top: `${laser.y}vh`, left: `${laser.x}vw`, width:`${laser.width}vw` }"
+        >
+          <img
+            alt="laser"
+            :style="{ width:`${laser.width}vw` }"
+            src="../assets/laser-ball.png"
+          />
+        </div>
+      </div>
+
     </body>
   </div>
 </template>
 
-
 <script setup>
-// @ is an alias to /src
 import { computed, reactive, onMounted, ref } from "vue";
 import TieFighter from "@/components/TieFighter.vue";
 import ChaseView from "@/components/ChaseView.vue";
@@ -196,18 +182,6 @@ const state = reactive({
   isPaused: false,
   pauseText: 'PAUSE',
   titleTextOpacity: 0,
-  lasers: [{
-      x: 48,
-      y: -20,
-      width: 5,
-      isFired: false
-    },
-    {
-      x: 48,
-      y: -20,
-      width: 5,
-      isFired: false
-    }],
   tieX: 95,
   tieY: 20,
   mouseDown: true,
@@ -216,6 +190,21 @@ const state = reactive({
   tilt: 0,
   shipCount: 5
 });
+
+const lasers = ref([
+  {
+    x: 48,
+    y: -20,
+    width: 5,
+    isFired: false
+  },
+  {
+    x: 48,
+    y: -20,
+    width: 5,
+    isFired: false
+  }
+]);
 
 const friendCount = ref(0);
 
@@ -234,10 +223,6 @@ const deathStarX = computed(() => xWing.x / 12 * -1 + 50);
 const deathStarY = computed(() => xWing.y / 12 * -1 + 15);
 const gameRunning = ref(false);
 
-
-
-
-
 const blast1 = ref(new Audio(BlastSound));
 const blast2 = ref(new Audio(BlastSound));
 
@@ -249,57 +234,7 @@ const isPlayingMusic = reactive({});
 const isPlayingBlast1 = reactive({});
 const isPlayingExplosion = reactive({});
 
-function gotOne(isSavedFriend) {
-  state.lasers[0].isFired = false;
-  state.lasers[1].isFired = false;
-  playExplosionSound();
-  explosion.value.play();
-  if (isSavedFriend) {
-    state.points += 500;
-    friendCount.value++;
-  } else {
-    state.points += 100;
-  }
-}
-
-async function crashed() {
-  if (xWing.isInvincible)
-    return;
-
-  playExplosionSound();
-  state.shipCount--;
-  state.points += 100;
-  xWing.isHit = true;
-  for (let max = 26, min = 22; max > 10; max -= 2, min -= 2) {
-    for (let i = max; i > min; i -= 1) {
-      state.explosionWidth = i;
-      await new Promise((r) => setTimeout(r, 20));
-    }
-    for (let i = min; i < max; i += 1) {
-      state.explosionWidth = i;
-      await new Promise((r) => setTimeout(r, 20));
-    }
-  }
-  xWing.isHit = false;
-  runInvincibility();
-  if (state.shipCount < 1) {
-    gameOver();
-  }
-  fadeInShip();
-}
-
-async function runInvincibility() {
-  xWing.isInvincible = true;
-  for (let i = 0; i < 30; i++) {
-    state.shipOpacity = 350;
-    await new Promise((r) => setTimeout(r, 30));
-    state.shipOpacity = 70;
-    await new Promise((r) => setTimeout(r, 30));
-  }
-  state.shipOpacity = 100;
-  xWing.isInvincible = false;
-}
-
+//Text and things
 async function openInstructions() {
   state.instructionsOpen = true;
   for (let i = 100; i >= 60; i--) {
@@ -324,22 +259,6 @@ async function closeInstructions() {
   state.instructionsClosing = false;
 }
 
-async function gameOver() {
-  gameRunning.value = false;
-  friendCount.value = 0;
-  fadeinTitleText();
-  music.value.pause();
-}
-
-function pauseGame() {
-  state.isPaused = !state.isPaused;
-  state.pauseText = state.isPaused ? 'RESUME' : 'PAUSE';
-  if (state.isPaused) {
-    music.value.pause();
-  } else {
-    playMusic();
-  }
-}
 
 async function fadeinTitleText() {
   for (let i = 0; i <= 100; i++) {
@@ -348,14 +267,7 @@ async function fadeinTitleText() {
   }
 }
 
-async function fadeInShip() {
-  for (let i = 140, j = -20; i >= 20; i -= 2, j += 1) {
-    state.shipWidth = i;
-    state.shipLeft = j;
-    await new Promise((r) => setTimeout(r, 2));
-  }
-}
-
+// Music and sound
 async function playMusic() {
   music.value.play();
   while (!music.value.paused) {
@@ -367,7 +279,6 @@ async function playMusic() {
 }
 
 async function playBlastSound() {
-  console.log('home playBlastSound')
   if (isPlayingBlast1.value == false) {
     isPlayingBlast1.value = true;
     blast1.value.play();
@@ -389,6 +300,7 @@ async function playExplosionSound() {
   }
 }
 
+// X-Wing movements
 async function goUp() {
   state.mouseDown = true;
   let unit = 0.1;
@@ -418,7 +330,7 @@ async function goDown() {
 }
 
 async function goRight() {
-  if (xWing.isHit === false) {
+  if (!xWing.isHit) {
     tiltRight(20);
     state.mouseDown = true;
     let unit = 0.5;
@@ -435,7 +347,7 @@ async function goRight() {
 }
 
 async function goLeft() {
-  if (xWing.isHit === false) {
+  if (!xWing.isHit) {
     tiltLeft(-20);
     state.mouseDown = true;
     let unit = 0.5;
@@ -477,27 +389,106 @@ function mouseUp() {
   tiltCenter();
 }
 
+// X-Wing lasers
 async function shoot() {
   if (state.isPaused)
     return;
 
-  fireLaser(state.lasers[0].isFired ? 1 : 0);
+  fireLaser(lasers.value[0].isFired ? 1 : 0);
 }
 
 async function fireLaser(n) {
   playBlastSound();
-  state.lasers[n].y = xWing.y;
-  state.lasers[n].isFired = true;
+  lasers.value[n].y = xWing.y;
+  lasers.value[n].isFired = true;
   for (let y = xWing.y - 5, x = 47.5, w = 5; y > xWing.y - 50; y -= 1, x += .08, w -= .15) {
-    if (!state.lasers[n].isFired)
+    if (!lasers.value[n].isFired)
       break;
 
-    state.lasers[n].width = w;
-    state.lasers[n].x = x;
-    state.lasers[n].y = y;
+    lasers.value[n].width = w;
+    lasers.value[n].x = x;
+    lasers.value[n].y = y;
     await new Promise((r) => setTimeout(r, 1));
   }
-  state.lasers[n].isFired = false;
+  lasers.value[n].isFired = false;
+}
+
+function gotOne(isSavedFriend) {
+  lasers.value[0].isFired = false;
+  lasers.value[1].isFired = false;
+  playExplosionSound();
+  explosion.value.play();
+  if (isSavedFriend) {
+    state.points += 500;
+    friendCount.value++;
+  } else {
+    state.points += 100;
+  }
+}
+
+//Other Functions
+async function crashed() {
+  if (xWing.isInvincible)
+    return;
+
+  playExplosionSound();
+  state.shipCount--;
+  state.points += 100;
+  xWing.isHit = true;
+  for (let max = 26, min = 22; max > 10; max -= 2, min -= 2) {
+    for (let i = max; i > min; i -= 1) {
+      state.explosionWidth = i;
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    for (let i = min; i < max; i += 1) {
+      state.explosionWidth = i;
+      await new Promise((r) => setTimeout(r, 20));
+    }
+  }
+  xWing.isHit = false;
+  runInvincibility();
+  if (state.shipCount < 1) {
+    gameOver();
+  }
+  fadeInShip();
+}
+
+async function runInvincibility() {
+  xWing.isInvincible = true;
+  for (let i = 0; i < 30; i++) {
+    state.shipOpacity = 350;
+    await new Promise((r) => setTimeout(r, 30));
+    state.shipOpacity = 70;
+    await new Promise((r) => setTimeout(r, 30));
+  }
+  state.shipOpacity = 100;
+  xWing.isInvincible = false;
+}
+
+async function fadeInShip() {
+  for (let i = 140, j = -20; i >= 20; i -= 2, j += 1) {
+    state.shipWidth = i;
+    state.shipLeft = j;
+    await new Promise((r) => setTimeout(r, 2));
+  }
+}
+
+//Game Flow
+async function gameOver() {
+  gameRunning.value = false;
+  friendCount.value = 0;
+  fadeinTitleText();
+  music.value.pause();
+}
+
+function pauseGame() {
+  state.isPaused = !state.isPaused;
+  state.pauseText = state.isPaused ? 'RESUME' : 'PAUSE';
+  if (state.isPaused) {
+    music.value.pause();
+  } else {
+    playMusic();
+  }
 }
 
 async function runGame() {
@@ -675,7 +666,12 @@ body {
   z-index: 100;
 }
 
-#laser {
+.laser {
+  position: fixed;
+  z-index: 103;
+}
+
+/* #laser {
   position: fixed;
   left: 100px;
   z-index: 103;
@@ -684,7 +680,7 @@ body {
 #laser2 {
   position: fixed;
   z-index: 103;
-}
+} */
 
 #up:hover, 
 #down:hover, 

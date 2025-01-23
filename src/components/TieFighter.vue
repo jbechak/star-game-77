@@ -51,8 +51,6 @@ let state = reactive({
   tieWidth: 50
 });
 
-
-
 async function tieFighter() {
   state.tieActive = false;
   let realX = Math.floor(Math.random() * 200) + 51;
