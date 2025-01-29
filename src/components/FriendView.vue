@@ -55,7 +55,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted, defineProps } from 'vue';
+import { reactive, ref, onMounted, onUnmounted, watchEffect, defineProps } from 'vue';
 import BlastSound from "@/assets/BlastSoundQuiet.mp3";
 
 const props = defineProps({
@@ -232,10 +232,9 @@ async function runFriend() {
     await new Promise((r) => setTimeout(r, 2));
   }
 
-  for (let i = 0; i < 500; i++) {
-    if (!props.gameRunning) 
-      return;
-  
+  for (let i = 0; i < 500; i++) {    
+    if (!props.gameRunning || !isRunning.value) break;
+
     await pauseIfPaused();
     if (state.mouseDown) {
       let waitTime = Math.floor(Math.random() * 200);
@@ -251,6 +250,8 @@ async function runFriend() {
       let waitTime = Math.floor(Math.random() * 2000);
       await new Promise((r) => setTimeout(r, waitTime));
       await pauseIfPaused();
+      if (!props.gameRunning) 
+      return;
 
       let nextMove = Math.floor(Math.random() * 5);
       if (nextMove == 1) {
@@ -293,26 +294,44 @@ async function handleThankYou() {
   showThankYou.value = false
 }
 
-async function runBlaster() {
-  for (let i = 0; i < 1000; i++) {
-    if (!props.gameRunning) 
-      return;
+let isRunning = ref(true); // Local control to stop the loop
 
-    while (props.isPaused === true) {
+async function runBlaster() {
+  isRunning.value = true; // Ensure loop runs when starting
+  while (props.gameRunning && isRunning.value) {
+    while (props.isPaused) {
       await new Promise((r) => setTimeout(r, 100));
     }
-    let waitTime = Math.floor(Math.random() * 300);
+    let waitTime = Math.floor(Math.random() * 1000);
     await new Promise((r) => setTimeout(r, waitTime));
+
+    if (!props.gameRunning || !isRunning.value) break; // Exit loop if stopped
+
     let nextMove = Math.floor(Math.random() * 3);
-    if (nextMove == 0) {
+    if (nextMove === 0) {
       shoot();
     }
   }
 }
 
+
+// Watch gameRunning and start/stop runBlaster accordingly
+watchEffect(() => {
+  if (props.gameRunning) {
+    runBlaster();
+  } else {
+    isRunning.value = false; // Stop the loop
+  }
+});
+
+// Ensure the loop stops if the component is destroyed
+onUnmounted(() => {
+  isRunning.value = false;
+});
+
 onMounted(async () => {
   runFriend();
-  runBlaster();
+  //runBlaster();
 });
 </script>
 

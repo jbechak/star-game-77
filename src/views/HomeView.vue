@@ -476,7 +476,7 @@ async function fadeInShip() {
 //Game Flow
 async function gameOver() {
   gameRunning.value = false;
-  friendCount.value = 0;
+  //friendCount.value = 0;
   fadeinTitleText();
   music.value.pause();
 }
