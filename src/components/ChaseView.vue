@@ -10,7 +10,7 @@
         opacity: `${tieFighter.explosionOpacity}%`
       }"
     >
-      <div v-if="state.goingRight">
+      <div v-if="goingRight">
         <img v-if="!tieFighter.isBlasted" src="../assets/tie-fighter-going-right.png" :style="{ width: `${tieFighter.width}vw` }">
         <img 
           v-else 
@@ -36,7 +36,7 @@
           left: `${reward.x}vw`,
           opacity: `${reward.pointsOpacity}%` 
         }">
-      +500
+      +1000
     </h3>
     <div
       v-show="xWingFighter.isActive"
@@ -52,14 +52,14 @@
           Help!
         </h3>
       </div>
-      <img v-if="state.goingRight" src="../assets/x-wing-going-right.png" :style="{ width: `${xWingFighter.width}vw` }">
+      <img v-if="goingRight" src="../assets/x-wing-going-right.png" :style="{ width: `${xWingFighter.width}vw` }">
       <img v-else src="../assets/x-wing-angle.png" :style="{ width: `${xWingFighter.width}vw` }">
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, reactive, defineProps, defineEmits } from 'vue';
+import { onMounted, reactive, defineProps, defineEmits, ref } from 'vue';
 
 
 // export default {
@@ -78,14 +78,7 @@ const props = defineProps({
 });
 const emit = defineEmits(['blasted']);
 
-let state = reactive({
-  isBlasted: false,
-  hasCollided: false,
-  tieX: 95,
-  tieY: 20,
-  points: 0,
-  goingRight: false
-});
+const goingRight = ref(false);
 
 let xWingFighter = reactive({
   isBlasted: false,
@@ -104,7 +97,6 @@ let tieFighter = reactive({
   z: 0,
   isActive: true,
   width: 50,
-  showReward: false,
   explosionOpacity: 100
 });
 
@@ -118,10 +110,10 @@ const isShowingReward = reactive({});
 
 async function runChase() {
   tieFighter.explosionOpacity = 100;
-  state.goingRight = !state.goingRight;
+  goingRight.value = !goingRight.value;
   tieFighter.isActive = false;
   xWingFighter.isActive = false;
-  let realX = state.goingRight ? -200 : 600;
+  let realX = goingRight.value ? -200 : 600;
   let realY = Math.floor(Math.random() * 40) + 71;
   let z = Math.floor(Math.random() * 8) + 10;
   let waitTime = Math.floor(Math.random() * 6000);
@@ -133,18 +125,17 @@ async function runChase() {
   xWingFighter.y = 0;
   tieFighter.isActive = true;
   xWingFighter.isActive = true;
-  state.showReward = false;
   for (let i = z, j = i / 50; i <= 200; i += j, j += j / 10) {
     while (props.isPaused === true) {
       await new Promise((r) => setTimeout(r, 100));
     }
     xWingFighter.z = i;
     xWingFighter.width = 30 * xWingFighter.z / 100;
-    realX = state.goingRight ? realX + 15 : realX - 15;
+    realX = goingRight.value ? realX + 15 : realX - 15;
     xWingFighter.y = realY - ((100 - xWingFighter.z) / 2) - xWingFighter.width / 2; 
     xWingFighter.x = ((realX - props.xWing.x + 50 - xWingFighter.width / 2) - 50) * xWingFighter.z / 100 + 50; 
     if (!tieFighter.isBlasted) {
-      tieFighter.x = state.goingRight ? xWingFighter.x - xWingFighter.z / 2 : xWingFighter.x + xWingFighter.z / 2;
+      tieFighter.x = goingRight.value ? xWingFighter.x - xWingFighter.z / 2 : xWingFighter.x + xWingFighter.z / 2;
       tieFighter.y = xWingFighter.y - xWingFighter.z / 2;
       tieFighter.z = xWingFighter.z - 5;
       tieFighter.width = 8 * tieFighter.z / 100;

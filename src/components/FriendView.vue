@@ -27,26 +27,26 @@
     </div>
 
     <div 
-      v-if="state.lasers[0].isFired"
+      v-if="lasers[0].isFired"
       class="lasers"
       id="laser"
-      :style="{ top: `${state.lasers[0].y}vh`, left: `${state.lasers[0].x}vw`, width:`${state.lasers[0].width}vw` }"
+      :style="{ top: `${lasers[0].y}vh`, left: `${lasers[0].x}vw`, width:`${lasers[0].width}vw` }"
     >
       <img
         alt="laser"
-        :style="{ width:`${state.lasers[0].width}vw` }"
+        :style="{ width:`${lasers[0].width}vw` }"
         src="../assets/laser-ball.png"
       />
     </div>
     <div
-      v-if="state.lasers[1].isFired"
+      v-if="lasers[1].isFired"
       class="lasers"
       id="laser2"
-      :style="{ top: `${state.lasers[1].y}vh`, left: `${state.lasers[1].x}vw`, width:`${state.lasers[1].width}vw` }"
+      :style="{ top: `${lasers[1].y}vh`, left: `${lasers[1].x}vw`, width:`${lasers[1].width}vw` }"
     >
       <img
         alt="laser"
-        :style="{ width:`${state.lasers[1].width}vw` }"
+        :style="{ width:`${lasers[1].width}vw` }"
         src="../assets/laser-ball.png"
       />
     </div>
@@ -69,21 +69,20 @@ const props = defineProps({
   gameRunning: { type: Boolean, value: false },
 });
 
-const state = reactive({
-  lasers: [{
-    x: 48,
-    y: -20,
-    width: 5,
-    isFired: false
-  },
-  {
-    x: 48,
-    y: -20,
-    width: 5,
-    isFired: false
-  }],
-  mouseDown: false
-});
+const lasers = ref([{
+  x: 48,
+  y: -20,
+  width: 5,
+  isFired: false
+},
+{
+  x: 48,
+  y: -20,
+  width: 5,
+  isFired: false
+}]);
+
+const mouseDown = ref(false);
 const friend = reactive({
   isBlasted: false,
   hasCollided: false,
@@ -116,11 +115,11 @@ async function playBlastSound() {
 }
 
 async function goUp() {
-  state.mouseDown = true;
+  mouseDown.value = true;
   let unit = 0.1;
   for (let i = friend.y; i > 35; i -= unit) {
     unit += 0.1;
-    if (!state.mouseDown) {
+    if (!mouseDown.value) {
       break;
     }
     friend.y = i;
@@ -129,11 +128,11 @@ async function goUp() {
 }
 
 async function goDown() {
-  state.mouseDown = true;
+  mouseDown.value = true;
   let unit = 0.1;
   for (let i = friend.y; i < 75; i += unit) {
     unit += 0.1;
-    if (!state.mouseDown) {
+    if (!mouseDown.value) {
       break;
     }
     friend.y = i;
@@ -143,12 +142,12 @@ async function goDown() {
 
 async function goRight() {
   tiltRight(20);
-  state.mouseDown = true;
+  mouseDown.value = true;
   let unit = 0.2;
   for (let i = friend.x; i < 95; i += unit) {
     unit += 0.03;
-    if (!state.mouseDown || friend.x >= 95) {
-      state.mouseDown = false
+    if (!mouseDown.value || friend.x >= 95) {
+      mouseDown.value = false
       tiltCenter();
       break;
     }
@@ -159,12 +158,12 @@ async function goRight() {
 
 async function goLeft() {
   tiltLeft(-20);
-  state.mouseDown = true;
+  mouseDown.value = true;
   let unit = 0.2;
   for (let i = friend.x; i > 5; i -= unit) {
     unit += 0.03;
-    if (!state.mouseDown || friend.x <= 5) {
-      state.mouseDown = false
+    if (!mouseDown.value || friend.x <= 5) {
+      mouseDown.value = false
       tiltCenter();
       break;
     }
@@ -196,25 +195,25 @@ async function tiltCenter() {
 }
 
 function mouseUp() {
-  state.mouseDown = false;
+  mouseDown.value = false;
   tiltCenter();
 }
 
 async function shoot() {
-  fireLaser(state.lasers[0].isFired ? 1 : 0);
+  fireLaser(lasers.value[0].isFired ? 1 : 0);
 }
 
 async function fireLaser(n) {
   playBlastSound();
-  state.lasers[n].y = friend.y;
-  state.lasers[n].isFired = true;
+  lasers.value[n].y = friend.y;
+  lasers.value[n].isFired = true;
   for (let y = friend.y - 5, x = (300 - props.xWing.x) / 4 - 39.7 + friend.x, w = 3; y > friend.y - 50; y -= 1, x += .08, w -= .15) {
-    state.lasers[n].width = w;
-    state.lasers[n].x = x;
-    state.lasers[n].y = y;
+    lasers.value[n].width = w;
+    lasers.value[n].x = x;
+    lasers.value[n].y = y;
     await new Promise((r) => setTimeout(r, 1));
   }
-  state.lasers[n].isFired = false;
+  lasers.value[n].isFired = false;
 }
 
 async function runFriend() {
@@ -236,7 +235,7 @@ async function runFriend() {
     if (!props.gameRunning || !isRunning.value) break;
 
     await pauseIfPaused();
-    if (state.mouseDown) {
+    if (mouseDown.value) {
       let waitTime = Math.floor(Math.random() * 200);
       await new Promise((r) => setTimeout(r, waitTime));
       await pauseIfPaused();

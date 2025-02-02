@@ -1,5 +1,5 @@
 <template>
-	<div id="window" class="instruction-window" :style="{left: `${state.left}vw` }">
+	<div id="window" class="instruction-window" :style="{left: `${left}vw` }">
 		<link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Monoton&display=swap" rel="stylesheet">
@@ -35,37 +35,26 @@
 	</div>
 </template>
 
-<script>
-import { onMounted, reactive } from 'vue';
-export default {
-	name: "InstructionsView",
-	emits: ['closeInstructions'],
-	setup(props, { emit }) {
-		let state = reactive({
-			left: 0
-		});
+<script setup>
+import { onMounted, ref } from 'vue';
 
-		async function closeWindow() {
-			for (let i = 12; i > -90; i--) {
-				state.left = i;
-				await new Promise((r) => setTimeout(r, 5));
-      }
-			emit('closeInstructions'); 
-		}
+const emit = defineEmits(['closeInstructions']);
+const left = ref(0);
 
-		onMounted(async () => {
-      for (let i = -80; i <= 7; i++) {
-				state.left = i;
-				await new Promise((r) => setTimeout(r, 2));
-      }
-    });
-
-		return {
-			closeWindow,
-			state
-		}
+async function closeWindow() {
+	for (let i = 12; i > -90; i--) {
+		left.value = i;
+		await new Promise((r) => setTimeout(r, 5));
 	}
-};
+	emit('closeInstructions'); 
+}
+
+onMounted(async () => {
+	for (let i = -80; i <= 7; i++) {
+		left.value = i;
+		await new Promise((r) => setTimeout(r, 2));
+	}
+});
 </script>
 
 <style scoped>

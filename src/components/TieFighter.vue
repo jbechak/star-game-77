@@ -6,7 +6,7 @@
       top: `${state.tieY}vh`,
       left: `${state.tieX}vw`,
       width: `${state.tieWidth}vw`,
-      zIndex: `${state.z}`
+      zIndex: `${state.z + 2}`
     }"
   >
     <img class="image" v-if="!state.isBlasted && !state.hasCollided" src="../assets/tie-200.png" />

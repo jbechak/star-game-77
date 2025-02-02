@@ -4,10 +4,10 @@
     id="background" 
     tabindex="0" 
     @keydown.space="shoot"
-    @keydown.left="state.mouseDown ? null : goLeft()"
-    @keydown.right="state.mouseDown ? null : goRight()"
-    @keydown.up="state.mouseDown ? null : goUp()"
-    @keydown.down="state.mouseDown ? null : goDown()"
+    @keydown.left="mouseDown ? null : goLeft()"
+    @keydown.right="mouseDown ? null : goRight()"
+    @keydown.up="mouseDown ? null : goUp()"
+    @keydown.down="mouseDown ? null : goDown()"
     @keydown.esc="pauseGame"
     @mouseup="mouseUp" 
     @keyup.left="mouseUp"
@@ -18,8 +18,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Monoton&display=swap" rel="stylesheet">
-    <instructions-view v-if="state.instructionsOpen" id="instructions" @closeInstructions="closeInstructions"/>
-    <body :style="{ opacity: `${state.bodyOpacity}%` }">
+    <instructions-view v-if="instructionsOpen" id="instructions" @closeInstructions="closeInstructions"/>
+    <body :style="{ opacity: `${bodyOpacity}%` }">
 
       <!-- BACKGROUND-->
       <img 
@@ -29,20 +29,20 @@
       >
 
       <!-- TITLE SCREEN TEXT -->
-      <div v-if="!gameRunning" class="title-screen-text" :style="{ opacity: `${state.titleTextOpacity}%` }">
+      <div v-if="!gameRunning" class="title-screen-text" :style="{ opacity: `${titleTextOpacity}%` }">
         <h1 
-          v-if="state.shipCount > 0" 
+          v-if="shipCount > 0" 
           id="game-title" 
           class="title-text"
         >
-          STAR GAME 77
+          {{ labels.STAR_GAME_77 }}
         </h1>
         <h1 
           v-else
           id="game-over" 
           class="title-text"
         >
-          GAME OVER
+          {{ labels.GAME_OVER }}
         </h1>
         <div id="startup-btns">
           <h2 
@@ -50,29 +50,29 @@
             class="btn-border btn-hover" 
             @click="openInstructions" 
           >
-            INSTRUCTIONS
+            {{ labels.INSTRUCTIONS }}
           </h2>
           <h2 
             id="start-btn" 
             class="btn-border btn-hover" 
             @click="runGame"
           >
-            START
+            {{ labels.START }}
           </h2>
         </div>
       </div>
 
       <!-- TOP OF SCREEN INFO -->
       <div v-if="gameRunning">
-        <h2 id="ship-count" class="text">{{ state.shipCount }}</h2>
+        <h2 id="ship-count" class="text">{{ shipCount }}</h2>
         <img id="ship-count-img" src="../assets/x-wing-200.png" />
-        <h2 id="points" class="text">{{ state.points }}&nbsp; &nbsp; points</h2>
+        <h2 id="points" class="text">{{ points }}&nbsp; &nbsp; points</h2>
         <h2 
           id="pause-btn" 
           class="btn-border btn-hover text" 
           @click="pauseGame" 
           @tap="pauseGame">
-          {{ state.pauseText }}
+          {{ pauseText }}
         </h2>
       </div>
       <h2 v-if="!isMusicLoaded || !isBlastSoundLoaded" class="loading">Music and Sounds loading...</h2>
@@ -102,20 +102,20 @@
           id="ship" 
           :style="{ 
             top: `${xWing.y}vh`, 
-            transform: `rotate(${state.tilt}deg)`, 
-            opacity: `${state.shipOpacity}%`,
-            left: `${state.shipLeft}vw`
+            transform: `rotate(${shipTilt}deg)`, 
+            opacity: `${shipOpacity}%`,
+            left: `${shipLeft}vw`
           }">
-          <img v-if="!xWing.isHit" id="ship-img" :style="{width: `${state.shipWidth}vw` }" src="../assets/x-wing-200.png" />
-          <img v-else src="../assets/XwingExplosion-220.png" :style="{ width: `${state.explosionWidth}vw`}" />
+          <img v-if="!xWing.isHit" id="ship-img" :style="{width: `${shipWidth}vw` }" src="../assets/x-wing-200.png" />
+          <img v-else src="../assets/XwingExplosion-220.png" :style="{ width: `${explosionWidth}vw`}" />
         </div>
 
         <!-- OTHER SHIPS -->
-        <div v-for="(tie, key) in state.tieFighters" :key="key">
+        <div v-for="(tie, key) in tieFighters" :key="key">
           <tie-fighter
             :xWing="xWing"
             :lasers="lasers"
-            :isPaused="state.isPaused"
+            :isPaused="isPaused"
             @blasted="gotOne"
             @collided="crashed" 
           />
@@ -123,23 +123,48 @@
         <chase-view   
           :xWing="xWing"
           :lasers="lasers"
-          :isPaused="state.isPaused"
+          :isPaused="isPaused"
           @blasted="gotOne"
         />
         <div v-for="index in friendCount" :key="index">
           <friend-view 
             :xWing="xWing"
             :lasers="lasers"
-            :isPaused="state.isPaused"
+            :isPaused="isPaused"
             :gameRunning="gameRunning"  
           />
         </div>
-        <div id="death-star" :style="{ left: `${deathStarX}vw`, top: `${deathStarY}vw` }">
-          <img id="death-star-img" :style="{ width: `${state.deathStarWidth}vw` }" src="../assets/death-star.png" />
+        <div id="death-star" :style="{ left: `${deathStar.x}vw`, top: `${deathStar.y}vw` }">
+          <img id="death-star-img" :style="{ width: `${deathStarWidth}vw` }" src="../assets/death-star.png" />
         </div>      
-        <!-- <div id="star-destroyer">
-          <img id="star-destroyer-img" src="../assets/StarDestroyer.png" />
-        </div>       -->
+        
+         <!-- STAR DESTROYER -->
+        <div 
+          v-if="showStarDestroyer" 
+          id="star-destroyer" 
+          class="star-destroyer"
+          :style="{ left: `${starDestroyer.x}vw`, top: `${starDestroyer.y}vw`, filter: `saturate(${sdHits * 500}%)` }"
+        >
+          <img id="star-destroyer-img" :style="{ width: `${starDestroyerWidth}vw` }" src="../assets/StarDestroyer.png" />
+        </div>      
+        <div 
+          v-if="showStarDestroyerExplosion" 
+          class="star-destroyer-explosion"
+          :style="{ left: `${starDestroyerExplosion.x}vw`, top: `${starDestroyerExplosion.y}vw`, filter: `saturate(${starDestroyerExplosionWidth * 10}%)` }"
+        >
+          <img src="../assets/explosion2.png" :style="{ width: `${starDestroyerExplosionWidth}vw` }" />
+        </div>
+        <h3 
+          class="point-reward" 
+          v-if="showStarDestroyerReward" 
+          :style="
+            { 
+              top: `${starDestroyerPoints.y}vh`, 
+              left: `${starDestroyerPoints.x}vw`,
+              opacity: `${starDestroyerPoints.opacity}%` 
+            }">
+          +800
+        </h3>
       </div>
 
       <!-- LASER -->
@@ -147,7 +172,7 @@
         <div
           v-if="laser.isFired"
           class="laser"
-          :style="{ top: `${laser.y}vh`, left: `${laser.x}vw`, width:`${laser.width}vw` }"
+          :style="{ top: `${laser.y}vh`, left: `${laser.x}vw`, width:`${laser.width}vw`}"
         >
           <img
             alt="laser"
@@ -173,36 +198,47 @@ import ExplosionGlassSound from "@/assets/ExplosionGlass.mp3";
 import TieFighterMusic from "@/assets/TieFighterMusic.mp3";
 //import { useScreenOrientation } from '@vueuse/core';
 
-const state = reactive({
-  bodyOpacity: 100,
-  explosionWidth: 22,
-  deathStarWidth: 15,
-  instructionsOpen: false,
-  instructionsClosing: false,
-  isPaused: false,
-  pauseText: 'PAUSE',
-  titleTextOpacity: 0,
-  tieX: 95,
-  tieY: 20,
-  mouseDown: true,
-  points: 0,
-  tieFighters: new Array(8),
-  tilt: 0,
-  shipCount: 5
-});
+const bodyOpacity = ref(100);
+const titleTextOpacity = ref(0);
+const explosionWidth = ref(22);
+const deathStarWidth = ref(15);
+
+const mouseDown = ref(true);
+const instructionsOpen = ref(false);
+const instructionsClosing = ref(false);
+const isPaused = ref(false);
+const points = ref(0);
+const tieFighters = ref(new Array(8));
+
+const shipTilt = ref(0);
+const shipWidth = ref(null);
+const shipLeft = ref(null);
+const shipCount = ref(5);
+const shipOpacity = ref(100);
+
+const labels = {
+  STAR_GAME_77: 'STAR GAME 77',
+  GAME_OVER: 'GAME OVER',
+  INSTRUCTIONS: 'INSTRUCTIONS',
+  START: 'START',
+  PAUSE: 'PAUSE',
+  RESUME: 'RESUME',
+};
+
+const pauseText = computed(() => isPaused.value ? labels.RESUME : labels.PAUSE);
 
 const lasers = ref([
   {
     x: 48,
     y: -20,
     width: 5,
-    isFired: false
+    isFired: false,
   },
   {
     x: 48,
     y: -20,
     width: 5,
-    isFired: false
+    isFired: false,
   }
 ]);
 
@@ -219,8 +255,23 @@ const xWing = reactive({
   y: 70
 });
 
-const deathStarX = computed(() => xWing.x / 12 * -1 + 50);
-const deathStarY = computed(() => xWing.y / 12 * -1 + 15);
+const deathStar = computed(() => ({
+  x: xWing.x / 12 * -1 + 50,
+  y: xWing.y / 12 * -1 + 15
+}));
+
+const showStarDestroyer = ref(false);
+const starDestroyerWidth = ref(0);
+const starDestroyerAbsolute = reactive({
+  x: 70,
+  y: 30
+});
+
+const starDestroyer = computed(() => ({
+  x: xWing.x / 7 * -1 + starDestroyerAbsolute.x,
+  y: xWing.y / 7 * -1 + starDestroyerAbsolute.y
+}));
+
 const gameRunning = ref(false);
 
 const blast1 = ref(new Audio(BlastSound));
@@ -236,33 +287,33 @@ const isPlayingExplosion = reactive({});
 
 //Text and things
 async function openInstructions() {
-  state.instructionsOpen = true;
+  instructionsOpen.value = true;
   for (let i = 100; i >= 60; i--) {
-    state.bodyOpacity = i;
+    bodyOpacity.value = i;
     await new Promise((r) => setTimeout(r, 80));
-    if (state.instructionsOpen === false || state.instructionsClosing === true) {
+    if (!instructionsOpen.value || instructionsClosing.value) {
       break;
     }
   }
 }
 
 async function closeInstructions() {
-  state.instructionsClosing = true
-  for (let i = state.bodyOpacity; i <= 100; i++) {
-    state.bodyOpacity = i;
+  instructionsClosing.value = true
+  for (let i = bodyOpacity.value; i <= 100; i++) {
+    bodyOpacity.value = i;
     await new Promise((r) => setTimeout(r, 15));
-    if (state.instructionsOpen === false) {
+    if (!instructionsOpen.value) {
       break;
     }
   }
-  state.instructionsOpen = false;
-  state.instructionsClosing = false;
+  instructionsOpen.value = false;
+  instructionsClosing.value = false;
 }
 
 
 async function fadeinTitleText() {
   for (let i = 0; i <= 100; i++) {
-    state.titleTextOpacity = i;
+    titleTextOpacity.value = i;
     await new Promise((r) => setTimeout(r, 20));
   }
 }
@@ -273,7 +324,7 @@ async function playMusic() {
   while (!music.value.paused) {
     await new Promise((r) => setTimeout(r, 5000));
   }
-  if (gameRunning.value && !state.isPaused) {
+  if (gameRunning.value && !isPaused.value) {
     playMusic();
   }
 }
@@ -302,11 +353,11 @@ async function playExplosionSound() {
 
 // X-Wing movements
 async function goUp() {
-  state.mouseDown = true;
+  mouseDown.value = true;
   let unit = 0.1;
   for (let i = xWing.y; i > 50; i -= unit) {
     unit += 0.1;
-    if (!state.mouseDown) {
+    if (!mouseDown.value) {
       tiltCenter();
       break;
     }
@@ -316,11 +367,11 @@ async function goUp() {
 }
 
 async function goDown() {
-  state.mouseDown = true;
+  mouseDown.value = true;
   let unit = 0.1;
   for (let i = xWing.y; i < 84; i += unit) {
     unit += 0.1;
-    if (!state.mouseDown) {
+    if (!mouseDown.value) {
       tiltCenter();
       break;
     }
@@ -332,11 +383,11 @@ async function goDown() {
 async function goRight() {
   if (!xWing.isHit) {
     tiltRight(20);
-    state.mouseDown = true;
+    mouseDown.value = true;
     let unit = 0.5;
     for (let i = xWing.x; i < 300; i += unit) {
       unit += 0.3;
-      if (!state.mouseDown) {
+      if (!mouseDown.value) {
         tiltCenter();
         break;
       }
@@ -349,11 +400,11 @@ async function goRight() {
 async function goLeft() {
   if (!xWing.isHit) {
     tiltLeft(-20);
-    state.mouseDown = true;
+    mouseDown.value = true;
     let unit = 0.5;
     for (let i = xWing.x; i > 0; i -= unit) {
       unit += 0.3;
-      if (!state.mouseDown) {
+      if (!mouseDown.value) {
         tiltCenter();
         break;
       }
@@ -364,34 +415,34 @@ async function goLeft() {
 }
 
 async function tiltRight(degrees) {
-  for (let i = state.tilt; i < degrees; i++) {
-    state.tilt = i;
+  for (let i = shipTilt.value; i < degrees; i++) {
+    shipTilt.value = i;
     await new Promise((r) => setTimeout(r, 5));
   }
 }
 
 async function tiltLeft(degrees) {
-  for (let i = state.tilt; i > degrees; i--) {
-    state.tilt = i;
+  for (let i = shipTilt.value; i > degrees; i--) {
+    shipTilt.value = i;
     await new Promise((r) => setTimeout(r, 5));
   }
 }
 
 async function tiltCenter() {
-  if (state.tilt < 0)
+  if (shipTilt.value < 0)
     tiltRight(0);
   else
     tiltLeft(0);
 }
 
 function mouseUp() {
-  state.mouseDown = false;
+  mouseDown.value = false;
   tiltCenter();
 }
 
 // X-Wing lasers
 async function shoot() {
-  if (state.isPaused)
+  if (isPaused.value)
     return;
 
   fireLaser(lasers.value[0].isFired ? 1 : 0);
@@ -408,21 +459,34 @@ async function fireLaser(n) {
     lasers.value[n].width = w;
     lasers.value[n].x = x;
     lasers.value[n].y = y;
+
+    if (isStarDestroyerHit(lasers.value[n])) {
+      sdHits.value++;
+      console.log('HIT', sdHits.value);
+      
+      if (isStarDestroyerExploded.value) {
+        runStarDestroyerExplosion();
+      }
+      break;
+    }
+
     await new Promise((r) => setTimeout(r, 1));
   }
   lasers.value[n].isFired = false;
 }
 
-function gotOne(isSavedFriend) {
+function gotOne(isSavedFriend, isDestroyedStarDestroyer) {
   lasers.value[0].isFired = false;
   lasers.value[1].isFired = false;
   playExplosionSound();
   explosion.value.play();
   if (isSavedFriend) {
-    state.points += 500;
+    points.value += 1000;
     friendCount.value++;
+  } else if (isDestroyedStarDestroyer) {
+    points.value += 800;
   } else {
-    state.points += 100;
+    points.value += 100;
   }
 }
 
@@ -432,22 +496,22 @@ async function crashed() {
     return;
 
   playExplosionSound();
-  state.shipCount--;
-  state.points += 100;
+  shipCount.value--;
+  points.value += 100;
   xWing.isHit = true;
   for (let max = 26, min = 22; max > 10; max -= 2, min -= 2) {
     for (let i = max; i > min; i -= 1) {
-      state.explosionWidth = i;
+      explosionWidth.value = i;
       await new Promise((r) => setTimeout(r, 20));
     }
     for (let i = min; i < max; i += 1) {
-      state.explosionWidth = i;
+      explosionWidth.value = i;
       await new Promise((r) => setTimeout(r, 20));
     }
   }
   xWing.isHit = false;
   runInvincibility();
-  if (state.shipCount < 1) {
+  if (shipCount.value < 1) {
     gameOver();
   }
   fadeInShip();
@@ -455,20 +519,24 @@ async function crashed() {
 
 async function runInvincibility() {
   xWing.isInvincible = true;
-  for (let i = 0; i < 30; i++) {
-    state.shipOpacity = 350;
-    await new Promise((r) => setTimeout(r, 30));
-    state.shipOpacity = 70;
-    await new Promise((r) => setTimeout(r, 30));
+  for (let i = 0; i < 15; i++) {
+    for (let opacity = 65; opacity >= 35; opacity -= 10) {
+      shipOpacity.value = opacity;
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    for (let opacity = 45; opacity <= 75; opacity += 10) {
+      shipOpacity.value = opacity;
+      await new Promise((r) => setTimeout(r, 20));
+    }
   }
-  state.shipOpacity = 100;
+  shipOpacity.value = 100;
   xWing.isInvincible = false;
 }
 
 async function fadeInShip() {
   for (let i = 140, j = -20; i >= 20; i -= 2, j += 1) {
-    state.shipWidth = i;
-    state.shipLeft = j;
+    shipWidth.value = i;
+    shipLeft.value = j;
     await new Promise((r) => setTimeout(r, 2));
   }
 }
@@ -482,27 +550,102 @@ async function gameOver() {
 }
 
 function pauseGame() {
-  state.isPaused = !state.isPaused;
-  state.pauseText = state.isPaused ? 'RESUME' : 'PAUSE';
-  if (state.isPaused) {
+  isPaused.value = !isPaused.value;
+  if (isPaused.value) {
     music.value.pause();
   } else {
     playMusic();
   }
 }
 
+const sdHits = ref(0);
+const isStarDestroyerExploded = computed(() => sdHits.value >= 15);
+const starDestroyerExplosionWidth = ref(null);
+const showStarDestroyerExplosion = ref(false);
+const showStarDestroyerReward = ref(false);
+const starDestroyerExplosion = reactive({
+  x: 0,
+  y: 0
+});
+const starDestroyerPoints = reactive({
+  x: 0,
+  y: 0,
+  opacity: 0
+});
+
+async function runStarDestroyer() {
+  const waitTime = Math.floor(Math.random() * 3000) + 3000
+  await new Promise((r) => setTimeout(r, 3000));
+  starDestroyerAbsolute.x = Math.floor(Math.random() * 45) + 40;
+  starDestroyerAbsolute.y = Math.floor(Math.random() * 20) + 20;
+  showStarDestroyer.value = true;
+  
+  //exit light speed
+  for (let i = 1; i < 20; i += .5) {
+    while (isPaused.value) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    starDestroyerWidth.value = i;
+    if (!gameRunning.value) {
+      break;
+    }
+    await new Promise((r) => setTimeout(r, 5));
+  }
+}
+
+async function runStarDestroyerExplosion() {
+  gotOne(false, true);
+  showReward();
+  showStarDestroyer.value = false;
+  sdHits.value = 0;
+  showStarDestroyerExplosion.value = true
+  starDestroyerExplosion.x = starDestroyer.value.x + 10;
+  starDestroyerExplosion.y = starDestroyer.value.y + 4;
+  for (let i = 1; i < 30; i++) {
+    starDestroyerExplosion.x -= .5;
+    starDestroyerExplosion.y -= .2;
+    starDestroyerExplosionWidth.value = i;
+    console.log('starDestroyerExplosion.x', starDestroyerExplosion.x)
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  showStarDestroyerExplosion.value = false;
+  runStarDestroyer();
+}
+
+async function showReward() {
+  showStarDestroyerReward.value = true;
+  starDestroyerPoints.x = starDestroyer.value.x + 6;
+  for (let i = starDestroyer.value.y + 7, j = 100; i > starDestroyer.value.y - 20; i--, j -= 4) {
+    starDestroyerPoints.y = i;
+    starDestroyerPoints.opacity = j;
+    await new Promise((r) => setTimeout(r, 40));
+  }
+  showStarDestroyerReward.value = false;
+}
+
+const isStarDestroyerHit = (laser) =>
+  showStarDestroyer.value
+    && laser.y < starDestroyer.value.y + 30
+    
+    && laser.y > starDestroyer.value.y + 25
+    && laser.x < starDestroyer.value.x + (starDestroyerWidth.value / 2) + 9
+    && laser.x > starDestroyer.value.x - (starDestroyerWidth.value / 4) + 7
+    && laser.isFired;
+
+
 async function runGame() {
   friendCount.value = 0;
-  state.shipCount = 5;
-  state.points = 0;
+  shipCount.value = 5;
+  points.value = 0;
   gameRunning.value = true;
   playMusic();
   fadeInShip();
+  runStarDestroyer();
   for (let i = 10; i < 80; i += .01) {
-    while (state.isPaused === true) {
+    while (isPaused.value) {
       await new Promise((r) => setTimeout(r, 100));
     }
-    state.deathStarWidth = i;
+    deathStarWidth.value = i;
     if (gameRunning.value === false) {
       break;
     }
@@ -742,13 +885,20 @@ body {
 
 #star-destroyer {
   position: fixed;
-  top: 30vh;
-  left: 60vw;
+  z-index: 4;
+}
+
+.star-destroyer-explosion {
+  position: fixed;
   z-index: 5;
 }
 
-#star-destroyer-img {
-  width: 20vw;
+.point-reward {
+  color: rgb(255, 251, 35);
+  font-size: 2vw;
+  text-shadow: .05vw .05vw rgb(254, 125, 105);
+  position: fixed;
+  z-index: 101;
 }
 
 @media only screen and (min-width: 1400px) {
