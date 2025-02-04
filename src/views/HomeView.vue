@@ -137,7 +137,7 @@
         <div id="death-star" :style="{ left: `${deathStar.x}vw`, top: `${deathStar.y}vw` }">
           <img id="death-star-img" :style="{ width: `${deathStarWidth}vw` }" src="../assets/death-star.png" />
         </div>      
-        
+
          <!-- STAR DESTROYER -->
         <div 
           v-if="showStarDestroyer" 
@@ -182,6 +182,19 @@
         </div>
       </div>
 
+      <div
+        v-if="starDestroyerLaser.isFired"
+        class="laser"
+        :style="{ top: `${starDestroyerLaser.y}vh`, left: `${starDestroyerLaser.x}vw`, width:`${starDestroyerLaser.width}vw`, zIndex: `${starDestroyerLaser.z + 100}`}"
+      >
+        <img
+          alt="laser"
+          :style="{ width:`${starDestroyerLaser.width}vw` }"
+          src="../assets/laser-ball.png"
+        />
+      </div>
+
+
     </body>
   </div>
 </template>
@@ -196,6 +209,7 @@ import BlastSound from "@/assets/BlastSound.mp3";
 import ExplosionSound from "@/assets/Explosion.mp3";
 import ExplosionGlassSound from "@/assets/ExplosionGlass.mp3";
 import TieFighterMusic from "@/assets/TieFighterMusic.mp3";
+// import { pauseWhileTrue } from "@/helpers";
 //import { useScreenOrientation } from '@vueuse/core';
 
 const bodyOpacity = ref(100);
@@ -227,20 +241,33 @@ const labels = {
 
 const pauseText = computed(() => isPaused.value ? labels.RESUME : labels.PAUSE);
 
+const defaultLaser = {
+  x: null,
+  y: null,
+  z: null,
+  width: null,
+  isFired: false,
+}
+
 const lasers = ref([
   {
     x: 48,
     y: -20,
+    z: 100,
     width: 5,
     isFired: false,
   },
   {
     x: 48,
     y: -20,
+    z: 100,
     width: 5,
     isFired: false,
   }
 ]);
+
+const starDestroyerLaser = reactive({});
+Object.assign(starDestroyerLaser, defaultLaser);
 
 const friendCount = ref(0);
 
@@ -442,7 +469,7 @@ function mouseUp() {
 
 // X-Wing lasers
 async function shoot() {
-  if (isPaused.value)
+  if (isPaused.value || xWing.isHit)
     return;
 
   fireLaser(lasers.value[0].isFired ? 1 : 0);
@@ -452,17 +479,19 @@ async function fireLaser(n) {
   playBlastSound();
   lasers.value[n].y = xWing.y;
   lasers.value[n].isFired = true;
-  for (let y = xWing.y - 5, x = 47.5, w = 5; y > xWing.y - 50; y -= 1, x += .08, w -= .15) {
+  for (let y = xWing.y - 5, x = 47.5, w = 5, z = 99; y > xWing.y - 50; y -= 1, x += .08, w -= .15, z -= 2.25) {
     if (!lasers.value[n].isFired)
       break;
 
     lasers.value[n].width = w;
     lasers.value[n].x = x;
     lasers.value[n].y = y;
+    lasers.value[n].z = z;
+    console.log('laser z', z)
 
     if (isStarDestroyerHit(lasers.value[n])) {
       sdHits.value++;
-      console.log('HIT', sdHits.value);
+      //console.log('HIT', sdHits.value);
       
       if (isStarDestroyerExploded.value) {
         runStarDestroyerExplosion();
@@ -575,22 +604,63 @@ const starDestroyerPoints = reactive({
 
 async function runStarDestroyer() {
   const waitTime = Math.floor(Math.random() * 3000) + 3000
-  await new Promise((r) => setTimeout(r, 3000));
+  await new Promise((r) => setTimeout(r, waitTime));
   starDestroyerAbsolute.x = Math.floor(Math.random() * 45) + 40;
-  starDestroyerAbsolute.y = Math.floor(Math.random() * 20) + 20;
+  starDestroyerAbsolute.y = Math.floor(Math.random() * 15) + 25;
   showStarDestroyer.value = true;
   
   //exit light speed
   for (let i = 1; i < 20; i += .5) {
-    while (isPaused.value) {
-      await new Promise((r) => setTimeout(r, 100));
-    }
+    await pauseIfPaused();
     starDestroyerWidth.value = i;
     if (!gameRunning.value) {
       break;
     }
     await new Promise((r) => setTimeout(r, 5));
   }
+  let tickCounter = 0;
+  while (showStarDestroyer.value && gameRunning.value) {
+    await pauseIfPaused();
+    starDestroyerWidth.value += .1;
+    starDestroyer.value.x -=.05;
+    await new Promise((r) => setTimeout(r, 100));
+    tickCounter++;
+    //console.log(tickCounter, tickCounter % 20)
+    if (tickCounter % 20 === 0) {
+      starDestroyerShoot();
+    }
+  }
+  showStarDestroyer.value = false;
+  sdHits.value = 0;
+}
+
+async function starDestroyerShoot() {
+  const startingX = starDestroyer.value.x * 1.15 + starDestroyerWidth.value / 3.5; 
+  const startingY = starDestroyer.value.y * 1.1 + starDestroyerWidth.value * 1.1; 
+  const startingWidth  = starDestroyerWidth.value / 100; 
+  starDestroyerLaser.isFired = true;
+
+  for (let x = 0, y = startingY, w = startingWidth, z = 2; w < 100; w += w / 2, x += w / 80, y += w / 8, z += 10) {
+    //for (let x = startingX, y = startingY, w = startingWidth, z = 2; w < 100; w += w / 2, x -= w / 8, y += w / 8, z += 10) {
+    if (!gameRunning.value) {
+      break;
+    }
+    await pauseIfPaused();
+    console.log ('xWing.x', xWing.x)
+    starDestroyerLaser.x = (starDestroyer.value.x * 1.15 + starDestroyerWidth.value / 3.5) + ((starDestroyer.value.x - 50) * x)
+    //starDestroyerLaser.x = x - (xWing.x / 50); 
+    starDestroyerLaser.y = y; 
+    starDestroyerLaser.z = z; 
+    starDestroyerLaser.width = w; 
+
+    if (isXWingHit(starDestroyerLaser)) {
+      crashed();
+      break;
+    }
+    
+    await new Promise((r) => setTimeout(r, 75));
+  }
+  starDestroyerLaser.isFired = false;
 }
 
 async function runStarDestroyerExplosion() {
@@ -599,17 +669,23 @@ async function runStarDestroyerExplosion() {
   showStarDestroyer.value = false;
   sdHits.value = 0;
   showStarDestroyerExplosion.value = true
-  starDestroyerExplosion.x = starDestroyer.value.x + 10;
-  starDestroyerExplosion.y = starDestroyer.value.y + 4;
-  for (let i = 1; i < 30; i++) {
+  starDestroyerExplosion.x = starDestroyer.value.x + starDestroyerWidth.value / 2;
+  starDestroyerExplosion.y = starDestroyer.value.y + starDestroyerWidth.value / 10;
+  const fullExplosionWidth = starDestroyerWidth.value * 1.5
+  for (let i = fullExplosionWidth / 30; i < fullExplosionWidth; i++) {
     starDestroyerExplosion.x -= .5;
     starDestroyerExplosion.y -= .2;
     starDestroyerExplosionWidth.value = i;
-    console.log('starDestroyerExplosion.x', starDestroyerExplosion.x)
     await new Promise((r) => setTimeout(r, 10));
   }
   showStarDestroyerExplosion.value = false;
   runStarDestroyer();
+}
+
+async function pauseIfPaused() {
+  while (isPaused.value) {
+    await new Promise((r) => setTimeout(r, 100));
+  }
 }
 
 async function showReward() {
@@ -626,11 +702,21 @@ async function showReward() {
 const isStarDestroyerHit = (laser) =>
   showStarDestroyer.value
     && laser.y < starDestroyer.value.y + 30
-    
     && laser.y > starDestroyer.value.y + 25
     && laser.x < starDestroyer.value.x + (starDestroyerWidth.value / 2) + 9
     && laser.x > starDestroyer.value.x - (starDestroyerWidth.value / 4) + 7
+    && laser.z < 85
     && laser.isFired;
+
+const isXWingHit = (laser) =>
+  !xWing.isHit
+    && !xWing.isInvincible
+    && xWing.y < laser.y + 15 
+    && xWing.y > laser.y - 5
+    && laser.x > 30
+    && laser.x < 45
+    && laser.z >= 100;
+
 
 
 async function runGame() {
@@ -642,11 +728,9 @@ async function runGame() {
   fadeInShip();
   runStarDestroyer();
   for (let i = 10; i < 80; i += .01) {
-    while (isPaused.value) {
-      await new Promise((r) => setTimeout(r, 100));
-    }
+    await pauseIfPaused();
     deathStarWidth.value = i;
-    if (gameRunning.value === false) {
+    if (!gameRunning.value) {
       break;
     }
     await new Promise((r) => setTimeout(r, 200));
@@ -664,11 +748,11 @@ onMounted(async () => {
   isPlayingExplosion.value = false;
   music.value.oncanplaythrough = () => {
     isMusicLoaded.value = true;
-    console.log('isMusicLoaded', isMusicLoaded.value)
+    //console.log('isMusicLoaded', isMusicLoaded.value)
   };
   blast1.value.oncanplaythrough = () => {
     isBlastSoundLoaded.value = true;
-    console.log('isBlastSoundLoaded', isBlastSoundLoaded.value)
+    //console.log('isBlastSoundLoaded', isBlastSoundLoaded.value)
   };
 });
 
@@ -813,17 +897,6 @@ body {
   position: fixed;
   z-index: 103;
 }
-
-/* #laser {
-  position: fixed;
-  left: 100px;
-  z-index: 103;
-}
-
-#laser2 {
-  position: fixed;
-  z-index: 103;
-} */
 
 #up:hover, 
 #down:hover, 

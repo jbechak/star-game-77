@@ -57,6 +57,7 @@
 <script setup>
 import { reactive, ref, onMounted, onUnmounted, watchEffect, defineProps } from 'vue';
 import BlastSound from "@/assets/BlastSoundQuiet.mp3";
+import { pauseWhileTrue } from '@/helpers';
 
 const props = defineProps({
   isPaused: { type: Boolean,  value: false  },
@@ -282,12 +283,6 @@ async function runFriend() {
   }
 }
 
-async function pauseIfPaused() {
-  while (props.isPaused) {
-    await new Promise((r) => setTimeout(r, 100));
-  }
-}
-
 async function handleThankYou() {
   await new Promise((r) => setTimeout(r, 2000));
   showThankYou.value = false
@@ -313,6 +308,11 @@ async function runBlaster() {
   }
 }
 
+async function pauseIfPaused() {
+  while (props.isPaused) {
+    await new Promise((r) => setTimeout(r, 100));
+  }
+}
 
 // Watch gameRunning and start/stop runBlaster accordingly
 watchEffect(() => {
