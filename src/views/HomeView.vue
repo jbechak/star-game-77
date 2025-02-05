@@ -99,6 +99,7 @@
 
         <!-- X-WING --> 
         <div
+          v-if="!xWing.isHit"
           id="ship" 
           :style="{ 
             top: `${xWing.y}vh`, 
@@ -106,8 +107,18 @@
             opacity: `${shipOpacity}%`,
             left: `${shipLeft}vw`
           }">
-          <img v-if="!xWing.isHit" id="ship-img" :style="{width: `${shipWidth}vw` }" src="../assets/x-wing-200.png" />
-          <img v-else src="../assets/XwingExplosion-220.png" :style="{ width: `${explosionWidth}vw`}" />
+          <img id="ship-img" :style="{width: `${shipWidth}vw` }" src="../assets/x-wing-200.png" />
+        </div>
+
+        <div 
+          v-else  
+          class="explosion"         
+          :style="{
+            left: `${shipLeft}vw`,
+            top: `${explosionY}vh`, 
+          }"
+        >
+          <img src="../assets/XwingExplosion-220.png" :style="{ width: `${explosionWidth}vw` }" />
         </div>
 
         <!-- OTHER SHIPS -->
@@ -229,6 +240,7 @@ const shipWidth = ref(null);
 const shipLeft = ref(null);
 const shipCount = ref(5);
 const shipOpacity = ref(100);
+const explosionY = ref(null);
 
 const labels = {
   STAR_GAME_77: 'STAR GAME 77',
@@ -488,7 +500,7 @@ async function fireLaser(n) {
     lasers.value[n].y = y;
     lasers.value[n].z = z;
     console.log('laser z', z)
-
+    console.log('starDestroyerWidth', starDestroyerWidth.value)
     if (isStarDestroyerHit(lasers.value[n])) {
       sdHits.value++;
       //console.log('HIT', sdHits.value);
@@ -528,15 +540,15 @@ async function crashed() {
   shipCount.value--;
   points.value += 100;
   xWing.isHit = true;
-  for (let max = 26, min = 22; max > 10; max -= 2, min -= 2) {
-    for (let i = max; i > min; i -= 1) {
-      explosionWidth.value = i;
-      await new Promise((r) => setTimeout(r, 20));
-    }
-    for (let i = min; i < max; i += 1) {
-      explosionWidth.value = i;
-      await new Promise((r) => setTimeout(r, 20));
-    }
+
+  const fullExplosionWidth = 70;
+  shipLeft.value += 12;
+  explosionY.value = xWing.y;
+  for (let i = fullExplosionWidth / 80; i < fullExplosionWidth; i++) {
+    shipLeft.value -= .5; 
+    explosionY.value -= .5;
+    explosionWidth.value = i;
+    await new Promise((r) => setTimeout(r, 8));
   }
   xWing.isHit = false;
   runInvincibility();
@@ -606,7 +618,7 @@ async function runStarDestroyer() {
   const waitTime = Math.floor(Math.random() * 3000) + 3000
   await new Promise((r) => setTimeout(r, waitTime));
   starDestroyerAbsolute.x = Math.floor(Math.random() * 45) + 40;
-  starDestroyerAbsolute.y = Math.floor(Math.random() * 15) + 25;
+  starDestroyerAbsolute.y = Math.floor(Math.random() * 30) + 10;
   showStarDestroyer.value = true;
   
   //exit light speed
@@ -625,7 +637,6 @@ async function runStarDestroyer() {
     starDestroyer.value.x -=.05;
     await new Promise((r) => setTimeout(r, 100));
     tickCounter++;
-    //console.log(tickCounter, tickCounter % 20)
     if (tickCounter % 20 === 0) {
       starDestroyerShoot();
     }
@@ -635,21 +646,16 @@ async function runStarDestroyer() {
 }
 
 async function starDestroyerShoot() {
-  const startingX = starDestroyer.value.x * 1.15 + starDestroyerWidth.value / 3.5; 
-  const startingY = starDestroyer.value.y * 1.1 + starDestroyerWidth.value * 1.1; 
   const startingWidth  = starDestroyerWidth.value / 100; 
   starDestroyerLaser.isFired = true;
 
-  for (let x = 0, y = startingY, w = startingWidth, z = 2; w < 100; w += w / 2, x += w / 80, y += w / 8, z += 10) {
-    //for (let x = startingX, y = startingY, w = startingWidth, z = 2; w < 100; w += w / 2, x -= w / 8, y += w / 8, z += 10) {
+  for (let x = 0, y = 0, w = startingWidth, z = 2; w < 100; w += w / 2, x += w / 85, y += w / 80, z += 10) {
     if (!gameRunning.value) {
       break;
     }
     await pauseIfPaused();
-    console.log ('xWing.x', xWing.x)
-    starDestroyerLaser.x = (starDestroyer.value.x * 1.15 + starDestroyerWidth.value / 3.5) + ((starDestroyer.value.x - 50) * x)
-    //starDestroyerLaser.x = x - (xWing.x / 50); 
-    starDestroyerLaser.y = y; 
+    starDestroyerLaser.x = (starDestroyer.value.x + starDestroyerWidth.value * .5) + ((starDestroyer.value.x - 50) * x);
+    starDestroyerLaser.y = (starDestroyer.value.y * 1.9 + starDestroyerWidth.value * .6) + ((starDestroyer.value.y - 20) * y);
     starDestroyerLaser.z = z; 
     starDestroyerLaser.width = w; 
 
@@ -672,8 +678,8 @@ async function runStarDestroyerExplosion() {
   starDestroyerExplosion.x = starDestroyer.value.x + starDestroyerWidth.value / 2;
   starDestroyerExplosion.y = starDestroyer.value.y + starDestroyerWidth.value / 10;
   const fullExplosionWidth = starDestroyerWidth.value * 1.5
-  for (let i = fullExplosionWidth / 30; i < fullExplosionWidth; i++) {
-    starDestroyerExplosion.x -= .5;
+  for (let i = fullExplosionWidth / 30, x = .5; i < fullExplosionWidth; i++, x += .5) {
+    starDestroyerExplosion.x = starDestroyer.value.x + starDestroyerWidth.value / 2 - x;
     starDestroyerExplosion.y -= .2;
     starDestroyerExplosionWidth.value = i;
     await new Promise((r) => setTimeout(r, 10));
@@ -701,8 +707,8 @@ async function showReward() {
 
 const isStarDestroyerHit = (laser) =>
   showStarDestroyer.value
-    && laser.y < starDestroyer.value.y + 30
-    && laser.y > starDestroyer.value.y + 25
+    && laser.y < starDestroyer.value.y * 1.4 + starDestroyerWidth.value * .7
+    && laser.y > starDestroyer.value.y * 1.4 + starDestroyerWidth.value * .5
     && laser.x < starDestroyer.value.x + (starDestroyerWidth.value / 2) + 9
     && laser.x > starDestroyer.value.x - (starDestroyerWidth.value / 4) + 7
     && laser.z < 85
@@ -712,10 +718,10 @@ const isXWingHit = (laser) =>
   !xWing.isHit
     && !xWing.isInvincible
     && xWing.y < laser.y + 15 
-    && xWing.y > laser.y - 5
+    && xWing.y > laser.y - 30
     && laser.x > 30
     && laser.x < 45
-    && laser.z >= 100;
+    && laser.z >= 50;
 
 
 
@@ -891,6 +897,11 @@ body {
   left: 40vw;
   width: 20vw;
   z-index: 100;
+}
+
+.explosion {
+  position: fixed;
+  z-index: 10;
 }
 
 .laser {
