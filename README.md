@@ -1,6 +1,6 @@
 # Star Game 77
 
-## View deployed application
+## Deployed application link
 https://star-game-77.netlify.app/
 
 ## User Instructions
